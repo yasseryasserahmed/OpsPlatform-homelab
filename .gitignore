@@ -1,4 +1,5 @@
 # Terraform
+secrets.txt
 .terraform/
 *.tfstate
 *.tfstate.*
