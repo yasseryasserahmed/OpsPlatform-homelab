@@ -1,0 +1,19 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+# Secrets
+*.pem
+id_*
+!*.pub
+.vault_pass
+secrets.yml
+/docs/decisions
+/docs/architecture.md
+# Generated
+.venv/
+__pycache__/
+architecture.md
