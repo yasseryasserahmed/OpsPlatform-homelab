@@ -46,14 +46,39 @@ resource "aws_route_table_association" "lab_public" {
 
 resource "aws_security_group" "lab" {
   name        = "homeops-lab"
-  description = "Allow SSH from the configured client IP"
+  description = "Allow restricted administration and Kubernetes node traffic"
   vpc_id      = aws_vpc.lab.id
 
   ingress {
+    description = "SSH from the configured client IP"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = [var.allowed_ssh_cidr]
+  }
+
+  ingress {
+    description = "Kubernetes node and pod traffic between lab nodes"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    self        = true
+  }
+
+  ingress {
+    description = "HTTP ingress NodePort from the configured client IP"
+    from_port   = 30080
+    to_port     = 30080
+    protocol    = "tcp"
+    cidr_blocks = [var.allowed_ingress_cidr]
+  }
+
+  ingress {
+    description = "HTTPS ingress NodePort from the configured client IP"
+    from_port   = 30443
+    to_port     = 30443
+    protocol    = "tcp"
+    cidr_blocks = [var.allowed_ingress_cidr]
   }
 
   egress {

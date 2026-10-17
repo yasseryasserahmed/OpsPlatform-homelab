@@ -1,0 +1,31 @@
+- name: Create a kubeadm join command on the control plane
+  hosts: control_plane_instance
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Generate a join command
+      ansible.builtin.command:
+        argv:
+          - kubeadm
+          - token
+          - create
+          - --print-join-command
+      register: kubeadm_join_command_result
+      no_log: true
+
+    - name: Save the join command for the worker play
+      ansible.builtin.set_fact:
+        kubeadm_join_command: "{{ kubeadm_join_command_result.stdout }}"
+      no_log: true
+
+- name: Execute the kubeadm join command on worker nodes
+  hosts: worker_nodes
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Join the Kubernetes cluster
+      ansible.builtin.command:
+        argv: "{{ hostvars[groups['control_plane_instance'][0]]['kubeadm_join_command'].split() }}"
+      args:
+        creates: /etc/kubernetes/kubelet.conf
+      no_log: true
