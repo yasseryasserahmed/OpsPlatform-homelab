@@ -14,3 +14,6 @@ key_name = "replace-with-existing-key-pair"
 # Documentation-only example address. Replace with your current public IPv4
 # address in /32 notation; do not use this example value for deployment.
 allowed_ssh_cidr = "198.51.100.10/32"
+
+# Limit direct NodePort testing to your public IP; replace with your own /32.
+allowed_ingress_cidr = "198.51.100.10/32"

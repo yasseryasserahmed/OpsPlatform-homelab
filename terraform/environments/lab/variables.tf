@@ -32,3 +32,13 @@ variable "allowed_ssh_cidr" {
   description = "Your current public IPv4 address in /32 format."
   type        = string
 }
+
+variable "allowed_ingress_cidr" {
+  description = "Your current public IPv4 address allowed to reach ingress NodePorts, in /32 format."
+  type        = string
+
+  validation {
+    condition     = can(cidrhost(var.allowed_ingress_cidr, 0)) && can(cidrnetmask(var.allowed_ingress_cidr)) && can(regex("/32$", var.allowed_ingress_cidr))
+    error_message = "Use your public IPv4 address with /32, for example 203.0.113.10/32."
+  }
+}
