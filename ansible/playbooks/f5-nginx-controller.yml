@@ -1,0 +1,76 @@
+- name: Configure F5 NGINX Controller
+  hosts: control_plane_instance
+  become: true
+  gather_facts: true
+
+  vars:
+    kubeconfig: /etc/kubernetes/admin.conf
+    helm_version: "v3.17.3"
+    helm_arch_map:
+      x86_64: amd64
+      aarch64: arm64
+    helm_arch: "{{ helm_arch_map[ansible_architecture] }}"
+    nginx_ic_namespace: nginx-ingress
+    nginx_ic_release: nginx-ingress
+    nginx_ic_chart_ref: oci://ghcr.io/nginx/charts/nginx-ingress
+    nginx_ic_chart_version: "2.8.0"
+
+  tasks:
+    - name: Install Helm {{ helm_version }}
+      ansible.builtin.unarchive:
+        src: "https://get.helm.sh/helm-{{ helm_version }}-linux-{{ helm_arch }}.tar.gz"
+        dest: /usr/local/bin
+        remote_src: true
+        include: "linux-{{ helm_arch }}/helm"
+        extra_opts: --strip-components=1
+        mode: "0755"
+        creates: /usr/local/bin/helm
+
+    - name: Wait until all nodes are Ready
+      ansible.builtin.command: >
+        kubectl --kubeconfig {{ kubeconfig }}
+        wait --for=condition=Ready node --all --timeout=180s
+      changed_when: false
+
+    - name: Deploy F5 NGINX Ingress Controller as a DaemonSet with NodePort service
+      kubernetes.core.helm:
+        name: "{{ nginx_ic_release }}"
+        chart_ref: "{{ nginx_ic_chart_ref }}"
+        chart_version: "{{ nginx_ic_chart_version }}"
+        release_namespace: "{{ nginx_ic_namespace }}"
+        create_namespace: true
+        kubeconfig: "{{ kubeconfig }}"
+        wait: true
+        wait_timeout: 5m
+        values:
+          controller:
+            kind: daemonset
+            ingressClass:
+              name: nginx
+              create: true
+              setAsDefaultIngress: true
+            service:
+              type: NodePort
+              httpPort:
+                nodePort: 30080
+              httpsPort:
+                nodePort: 30443
+    
+    - name: Show NGINX controller pods and their node placement
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - --kubeconfig
+          - "{{ kubeconfig }}"
+          - get
+          - pods
+          - --namespace
+          - "{{ nginx_ic_namespace }}"
+          - --output
+          - wide
+      register: nginx_pods
+      changed_when: false
+
+    - name: Report NGINX controller pods
+      ansible.builtin.debug:
+        msg: "{{ nginx_pods.stdout_lines }}"

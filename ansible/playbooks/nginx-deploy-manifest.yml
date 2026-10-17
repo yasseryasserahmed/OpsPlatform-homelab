@@ -1,0 +1,30 @@
+- name: Deploy NGINX Manifest
+  hosts: control_plane_instance
+  become: true
+  gather_facts: false
+  tasks:
+    - name: create deployments directory
+      ansible.builtin.file:
+        path: /deployments
+        state: directory
+        
+
+    - name: copy the manifest to the control plane
+      ansible.builtin.copy:
+        src: ../../Kubernetes/nginx.yml
+        dest: /deployments/nginx.yml
+
+    - name: Deploy NGINX Manifest
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - --kubeconfig
+          - /etc/kubernetes/admin.conf
+          - apply
+          - -f
+          - /deployments/nginx.yml
+      register: apply_result
+      changed_when: "'created' in apply_result.stdout or 'configured' in apply_result.stdout"
+        
+
+            
