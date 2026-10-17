@@ -16,6 +16,11 @@ cat > "$OUT_FILE" <<EOF
 [control_plane_instance]
 control-plane-instance ansible_host=${public_ip} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/ec2_homelab_controlplane.pem
 
+
+[k8s_nodes:children]
+control_plane_instance
+
+
 [control_plane_instance:vars]
 private_ip=${private_ip}
 instance_id=${instance_id}

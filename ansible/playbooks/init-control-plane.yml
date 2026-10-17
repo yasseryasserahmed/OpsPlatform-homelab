@@ -1,0 +1,27 @@
+- name : Init kubeadm control plane
+  hosts: control_plane_instance
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Initialize the Kubernetes control plane
+      ansible.builtin.command:
+        argv:
+          - kubeadm
+          - init
+          - --apiserver-advertise-address={{ private_ip }}
+          - --pod-network-cidr=10.244.0.0/16 #flannel cidr
+          - --cri-socket=unix:///run/containerd/containerd.sock
+      args:
+        creates: /etc/kubernetes/admin.conf
+
+    - name: Add flannel CNI plugin to the control plane
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - apply
+          - -f
+          - https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      changed_when: "'created' in flannel_apply.stdout or 'configured' in flannel_apply.stdout"
+      register: flannel_apply
