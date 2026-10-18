@@ -49,46 +49,30 @@ resource "aws_security_group" "lab" {
   description = "Allow restricted administration and Kubernetes node traffic"
   vpc_id      = aws_vpc.lab.id
 
-  ingress {
-    description = "SSH from the configured client IP"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = [var.allowed_ssh_cidr]
-  }
-
-  ingress {
-    description = "Kubernetes node and pod traffic between lab nodes"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    self        = true
-  }
-
-  ingress {
-    description = "HTTP ingress NodePort from the configured client IP"
-    from_port   = 30080
-    to_port     = 30080
-    protocol    = "tcp"
-    cidr_blocks = [var.allowed_ingress_cidr]
-  }
-
-  ingress {
-    description = "HTTPS ingress NodePort from the configured client IP"
-    from_port   = 30443
-    to_port     = 30443
-    protocol    = "tcp"
-    cidr_blocks = [var.allowed_ingress_cidr]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
   tags = {
     Name = "homeops-lab"
   }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "ssh" {
+  security_group_id = aws_security_group.lab.id
+  description       = "SSH from the configured client IP"
+  ip_protocol       = "tcp"
+  from_port         = 22
+  to_port           = 22
+  cidr_ipv4         = var.allowed_ssh_cidr
+}
+
+resource "aws_vpc_security_group_ingress_rule" "node_traffic" {
+  security_group_id            = aws_security_group.lab.id
+  referenced_security_group_id = aws_security_group.lab.id
+  description                  = "Kubernetes node and pod traffic between lab nodes"
+  ip_protocol                  = "-1"
+}
+
+resource "aws_vpc_security_group_egress_rule" "all_outbound" {
+  security_group_id = aws_security_group.lab.id
+  description       = "Allow nodes to reach package repositories and external services"
+  ip_protocol       = "-1"
+  cidr_ipv4         = "0.0.0.0/0"
 }

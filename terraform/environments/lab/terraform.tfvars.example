@@ -7,6 +7,7 @@ public_subnet_cidr = "10.20.1.0/24"
 # Replace with a real Ubuntu AMI ID available in eu-north-1.
 ami_id        = "ami-0123456789abcdef0"
 instance_type = "m7i-flex.large"
+ha_proxy_instance_type = "t3.micro"
 
 # Replace with the name of an existing EC2 key pair in eu-north-1.
 key_name = "replace-with-existing-key-pair"

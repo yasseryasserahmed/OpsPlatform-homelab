@@ -40,3 +40,23 @@ output "vpc_id" {
   description = "ID of the dedicated lab VPC."
   value       = module.network.vpc_id
 }
+
+output "ha_proxy_instance_id" {
+  description = "ID of the HAProxy frontend instance."
+  value       = module.ha_proxy.instance_id
+}
+
+output "ha_proxy_public_ip" {
+  description = "Public IPv4 address of the HAProxy frontend."
+  value       = module.ha_proxy.public_ip
+}
+
+output "ha_proxy_private_ip" {
+  description = "Private IPv4 address of the HAProxy frontend."
+  value       = module.ha_proxy.private_ip
+}
+
+output "ha_proxy_public_dns" {
+  description = "Public DNS name of the HAProxy frontend."
+  value       = module.ha_proxy.public_dns
+}

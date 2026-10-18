@@ -23,6 +23,12 @@ variable "instance_type" {
   type        = string
 }
 
+variable "ha_proxy_instance_type" {
+  description = "EC2 instance type for the HAProxy frontend."
+  type        = string
+  default     = "t3.micro"
+}
+
 variable "key_name" {
   description = "Name of an EC2 key pair that already exists in this region."
   type        = string

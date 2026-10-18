@@ -20,6 +20,11 @@ public_ip=$(terraform -chdir="$TF_DIR" output -raw control_plane_public_ip)
 private_ip=$(terraform -chdir="$TF_DIR" output -raw control_plane_private_ip)
 instance_id=$(terraform -chdir="$TF_DIR" output -raw control_plane_instance_id)
 
+#--- ha proxy ---
+proxy_public_ip=$(terraform -chdir="$TF_DIR" output -raw ha_proxy_public_ip)
+proxy_private_ip=$(terraform -chdir="$TF_DIR" output -raw ha_proxy_private_ip)
+proxy_instance_id=$(terraform -chdir="$TF_DIR" output -raw ha_proxy_instance_id)
+
 # --- workers ---
 worker_hosts=""
 for entry in "${WORKERS[@]}"; do
@@ -42,6 +47,9 @@ control-plane-instance ansible_host=${public_ip} ansible_user=${SSH_USER} ansibl
 
 [worker_nodes]
 ${worker_hosts%$'\n'}
+
+[ha_proxy]
+ha-proxy ansible_host=${proxy_public_ip} ansible_user=${SSH_USER} ansible_ssh_private_key_file=${SSH_KEY} private_ip=${proxy_private_ip} instance_id=${proxy_instance_id}
 
 
 [k8s_nodes:children]

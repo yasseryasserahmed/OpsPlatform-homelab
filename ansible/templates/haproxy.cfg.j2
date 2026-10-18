@@ -1,0 +1,40 @@
+global
+    log /dev/log local0
+    log /dev/log local1 notice
+    daemon
+    maxconn 2048
+
+defaults
+    log global
+    timeout connect 5s
+    timeout client 60s
+    timeout server 60s
+
+frontend ingress_http
+    bind *:80
+    mode http
+    option httplog
+    default_backend nginx_http
+
+backend nginx_http
+    mode http
+    balance roundrobin
+    option tcp-check
+    option forwardfor
+{% for worker in groups['worker_nodes'] %}
+    server {{ worker }} {{ hostvars[worker]['private_ip'] }}:30080 check
+{% endfor %}
+
+frontend ingress_https
+    bind *:443
+    mode tcp
+    option tcplog
+    default_backend nginx_https
+
+backend nginx_https
+    mode tcp
+    balance roundrobin
+    option tcp-check
+{% for worker in groups['worker_nodes'] %}
+    server {{ worker }} {{ hostvars[worker]['private_ip'] }}:30443 check
+{% endfor %}
