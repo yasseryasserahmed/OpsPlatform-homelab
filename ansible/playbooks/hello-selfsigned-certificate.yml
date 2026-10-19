@@ -1,0 +1,61 @@
+- name: Create the hello.lab self-signed TLS certificate
+  hosts: control_plane_instance
+  become: true
+  gather_facts: false
+
+  vars:
+    kubeconfig: /etc/kubernetes/admin.conf
+    certificate_manifest: /deployments/cert-manager-selfsigned.yml
+
+  tasks:
+    - name: Copy self-signed issuer and certificate manifest
+      ansible.builtin.copy:
+        src: ../../Kubernetes/cert-manager-selfsigned.yml
+        dest: "{{ certificate_manifest }}"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Apply the self-signed issuer and hello.lab certificate
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - --kubeconfig
+          - "{{ kubeconfig }}"
+          - apply
+          - -f
+          - "{{ certificate_manifest }}"
+      register: certificate_apply
+      changed_when: "'created' in certificate_apply.stdout or 'configured' in certificate_apply.stdout"
+
+    - name: Wait for the hello.lab TLS certificate to become Ready
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - --kubeconfig
+          - "{{ kubeconfig }}"
+          - wait
+          - --for=condition=Ready
+          - certificate/hello-lab-tls
+          - --namespace
+          - default
+          - --timeout=180s
+      changed_when: false
+
+    - name: Show certificate readiness
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - --kubeconfig
+          - "{{ kubeconfig }}"
+          - get
+          - certificate
+          - hello-lab-tls
+          - --namespace
+          - default
+      register: certificate_status
+      changed_when: false
+
+    - name: Report certificate status
+      ansible.builtin.debug:
+        msg: "{{ certificate_status.stdout_lines }}"

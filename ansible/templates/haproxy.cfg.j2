@@ -22,7 +22,7 @@ backend nginx_http
     option tcp-check
     option forwardfor
 {% for worker in groups['worker_nodes'] %}
-    server {{ worker }} {{ hostvars[worker]['private_ip'] }}:30080 check
+    server {{ worker }} {{ hostvars[worker]['private_ip'] }}:30080 check send-proxy
 {% endfor %}
 
 frontend ingress_https
@@ -36,5 +36,5 @@ backend nginx_https
     balance roundrobin
     option tcp-check
 {% for worker in groups['worker_nodes'] %}
-    server {{ worker }} {{ hostvars[worker]['private_ip'] }}:30443 check
+    server {{ worker }} {{ hostvars[worker]['private_ip'] }}:30443 check send-proxy
 {% endfor %}

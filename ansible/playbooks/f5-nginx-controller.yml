@@ -51,11 +51,17 @@
               setAsDefaultIngress: true
             service:
               type: NodePort
+              externalTrafficPolicy: Local
               httpPort:
                 nodePort: 30080
               httpsPort:
                 nodePort: 30443
-    
+            config:
+              entries:
+                proxy-protocol: "True"
+                real-ip-header: proxy_protocol
+                set-real-ip-from: "{{ hostvars[groups['ha_proxy'][0]]['private_ip'] }}"
+
     - name: Show NGINX controller pods and their node placement
       ansible.builtin.command:
         argv:

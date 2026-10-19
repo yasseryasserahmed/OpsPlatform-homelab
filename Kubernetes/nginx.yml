@@ -36,8 +36,14 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: hello
+  annotations:
+    nginx.org/redirect-to-https: "true"
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts:
+        - hello.lab
+      secretName: hello-lab-tls
   rules:
     - host: hello.lab
       http:
