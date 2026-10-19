@@ -1,7 +1,15 @@
-- name : Init kubeadm control plane
+- name: Init kubeadm control plane with Calico CNI
   hosts: control_plane_instance
   become: true
   gather_facts: true
+
+  vars:
+    kubeconfig: /etc/kubernetes/admin.conf
+    pod_network_cidr: 10.244.0.0/16 
+    calico_version: v3.33.0
+    calico_base_url: "https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests"
+    deployments_dir: /deployments
+
   tasks:
     - name: Initialize the Kubernetes control plane
       ansible.builtin.command:
@@ -9,19 +17,101 @@
           - kubeadm
           - init
           - --apiserver-advertise-address={{ private_ip }}
-          - --pod-network-cidr=10.244.0.0/16 #flannel cidr
+          - --pod-network-cidr={{ pod_network_cidr }}
           - --cri-socket=unix:///run/containerd/containerd.sock
       args:
         creates: /etc/kubernetes/admin.conf
 
-    - name: Add flannel CNI plugin to the control plane
+    - name: Install the Tigera operator CRDs
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - apply
+          - --server-side
+          - --force-conflicts
+          - -f
+          - "{{ calico_base_url }}/operator-crds.yaml"
+      environment:
+        KUBECONFIG: "{{ kubeconfig }}"
+      register: calico_crds
+      changed_when: "'serverside-applied' in calico_crds.stdout and 'unchanged' not in calico_crds.stdout"
+
+    - name: Install the Tigera operator
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - apply
+          - --server-side
+          - --force-conflicts
+          - -f
+          - "{{ calico_base_url }}/tigera-operator.yaml"
+      environment:
+        KUBECONFIG: "{{ kubeconfig }}"
+      register: calico_operator
+      changed_when: "'serverside-applied' in calico_operator.stdout and 'unchanged' not in calico_operator.stdout"
+
+    - name: Wait for the Tigera operator to become available
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - wait
+          - --for=condition=Available
+          - deployment/tigera-operator
+          - --namespace
+          - tigera-operator
+          - --timeout=180s
+      environment:
+        KUBECONFIG: "{{ kubeconfig }}"
+      changed_when: false
+
+    - name: Wait for the Installation CRD to be established
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - wait
+          - --for=condition=Established
+          - crd/installations.operator.tigera.io
+          - --timeout=120s
+      environment:
+        KUBECONFIG: "{{ kubeconfig }}"
+      changed_when: false
+
+    - name: Ensure the deployments directory exists
+      ansible.builtin.file:
+        path: "{{ deployments_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Render the Calico Installation resource
+      ansible.builtin.template:
+        src: ../templates/calico-installation.yml.j2
+        dest: "{{ deployments_dir }}/calico-installation.yml"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Apply the Calico Installation resource
       ansible.builtin.command:
         argv:
           - kubectl
           - apply
           - -f
-          - https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+          - "{{ deployments_dir }}/calico-installation.yml"
       environment:
-        KUBECONFIG: /etc/kubernetes/admin.conf
-      changed_when: "'created' in flannel_apply.stdout or 'configured' in flannel_apply.stdout"
-      register: flannel_apply
+        KUBECONFIG: "{{ kubeconfig }}"
+      register: calico_installation
+      changed_when: "'created' in calico_installation.stdout or 'configured' in calico_installation.stdout"
+
+    - name: Wait for Calico to report Available
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - wait
+          - --for=condition=Available
+          - tigerastatus/calico
+          - --timeout=300s
+      environment:
+        KUBECONFIG: "{{ kubeconfig }}"
+      changed_when: false
