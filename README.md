@@ -6,7 +6,7 @@ I built this to learn how the pieces of a platform fit together by assembling th
 
 ![Kubernetes control plane verification](docs/images/control-plane-running.png)
 
-*Verification output from 2026-10-16: control-plane node `Ready`, with Flannel, CoreDNS, etcd and the control-plane pods `Running`.*
+*Verification output from 2026-10-16: the control-plane node was `Ready`, with CoreDNS, etcd and the control-plane pods `Running`. This screenshot predates the current Calico CNI configuration.*
 
 ---
 
@@ -34,7 +34,7 @@ I built this to learn how the pieces of a platform fit together by assembling th
 |---|---|
 | **Infrastructure as Code** | Terraform with a reusable `network` module and an `ha-proxy` module, composed by a `lab` environment. Typed variables, input validation, outputs, pinned provider version. |
 | **Configuration management** | Idempotent Ansible playbooks: OS preflight checks, containerd and kernel/sysctl configuration, Kubernetes package install and version hold, cluster init and worker join. |
-| **Kubernetes internals** | Manual `kubeadm` bootstrap (1 control plane, 2 workers), containerd with the systemd cgroup driver, Flannel CNI, swap disabled, kernel modules and sysctls configured. |
+| **Kubernetes internals** | Manual `kubeadm` bootstrap (1 control plane, 2 workers), containerd with the systemd cgroup driver, Calico CNI with NetworkPolicy enforcement, swap disabled, kernel modules and sysctls configured. |
 | **Edge networking** | HAProxy load balancer in front of NodePort-exposed ingress, with PROXY protocol so the original client IP reaches NGINX. |
 | **TLS automation** | cert-manager installed with Helm, issuing a certificate from a self-signed `Issuer` for the sample app. |
 | **Network security** | Least-privilege security groups: SSH and web access limited to my IP, NodePorts reachable only from the HAProxy security group, Kubernetes API never exposed publicly. |
@@ -83,7 +83,7 @@ flowchart TB
 | Component | Detail |
 |---|---|
 | Container runtime | containerd 2.x, systemd cgroup driver |
-| CNI | Flannel (pod CIDR `10.244.0.0/16`) |
+| CNI and network policy | Calico `v3.33.0`, VXLAN encapsulation, pod CIDR `10.244.0.0/16`; supports Kubernetes NetworkPolicy enforcement |
 | Ingress | F5 NGINX Ingress Controller (Helm chart `2.8.0`) as a DaemonSet, NodePort `30080` / `30443` |
 | Certificates | cert-manager `v1.21.0` (Helm, CRDs enabled) |
 | OS | Ubuntu 24.04 LTS |
@@ -130,7 +130,7 @@ flowchart LR
     subgraph an["3. Ansible playbooks, in order"]
         direction TB
         C["bootstrap.yml<br/>preflight, swap off, containerd,<br/>sysctls, kubeadm packages"]
-        D["init-control-plane.yml<br/>kubeadm init + Flannel"]
+        D["init-control-plane.yml<br/>kubeadm init + Calico"]
         E["init-workers.yml<br/>kubeadm join"]
         F["configure-ha-proxy.yml<br/>install + template haproxy.cfg"]
         G["f5-nginx-controller.yml<br/>Helm + NGINX Ingress"]
@@ -186,7 +186,7 @@ The Kubernetes API (6443) is not open to the internet, and the HAProxy instance 
 **Cloud:** AWS (EC2, VPC, security groups, EBS gp3)
 **IaC:** Terraform `>= 1.1`, AWS provider `~> 6.0`
 **Config management:** Ansible (collections: `ansible.posix`, `community.general`, `kubernetes.core`)
-**Kubernetes:** kubeadm, containerd, Flannel, Helm
+**Kubernetes:** kubeadm, containerd, Calico, Helm
 **Edge and TLS:** HAProxy, F5 NGINX Ingress Controller, cert-manager
 **Scripting and linting:** Bash, yamllint
 
@@ -316,7 +316,7 @@ curl -I  http://hello.lab  --resolve "hello.lab:80:${PROXY_IP}"   # expect a red
 ## Roadmap
 
 - [ ] GitHub Actions: `terraform fmt/validate`, `ansible-lint`, `yamllint` on every push
-- [ ] Pin the Flannel manifest to a release version
+- [ ] Add and test Kubernetes NetworkPolicy manifests for the sample application
 - [ ] Remote Terraform state (S3 with locking)
 - [ ] Let's Encrypt staging issuer with a real domain and DNS
 - [ ] Argo CD for GitOps-managed application deployment
