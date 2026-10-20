@@ -4,8 +4,8 @@ A multi-node Kubernetes cluster on AWS, built entirely as code. **Terraform** pr
 
 I built this to learn how the pieces of a platform fit together by assembling them myself, instead of using a managed service like EKS.
 
-![Kubernetes complete platform verification](docs/images/all pods.png)
-![Grafana eccessible throw my browser throw ingress ](docs/images/grafana dashboard cluster.png)
+![Kubernetes complete platform verification](docs/images/all-pods.png)
+![Grafana eccessible throw my browser throw ingress ](docs/images/grafana-dashboard-cluster.png)
 ![Grafana eccessible throw my browser throw ingress](docs/images/argocd.png)
 
 
