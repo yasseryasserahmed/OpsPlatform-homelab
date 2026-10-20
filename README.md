@@ -4,9 +4,11 @@ A multi-node Kubernetes cluster on AWS, built entirely as code. **Terraform** pr
 
 I built this to learn how the pieces of a platform fit together by assembling them myself, instead of using a managed service like EKS.
 
-![Kubernetes control plane verification](docs/images/control-plane-running.png)
+![Kubernetes complete platform verification](docs/images/all pods.png)
+![Grafana eccessible throw my browser throw ingress ](docs/images/grafana dashboard cluster.png)
+![Grafana eccessible throw my browser throw ingress](docs/images/argocd.png)
 
-*Verification output from 2026-10-16: the control-plane node was `Ready`, with CoreDNS, etcd and the control-plane pods `Running`. This screenshot predates the current Calico CNI configuration.*
+
 
 ---
 
