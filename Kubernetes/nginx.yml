@@ -55,3 +55,23 @@ spec:
                 name: hello
                 port:
                   number: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-hello
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      app: hello
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: nginx-ingress
+      ports:
+        - protocol: TCP
+          port: 80
