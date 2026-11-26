@@ -5,6 +5,7 @@ secrets.txt
 *.tfstate.*
 *.tfvars
 !*.tfvars.example
+terraform/environments/lab/backend.local.hcl
 crash.log
 ansible/inventory.ini
 # Secrets

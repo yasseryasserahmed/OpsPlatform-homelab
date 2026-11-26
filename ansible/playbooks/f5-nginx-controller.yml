@@ -51,7 +51,7 @@
               setAsDefaultIngress: true
             service:
               type: NodePort
-              externalTrafficPolicy: Local
+              externalTrafficPolicy: Cluster
               httpPort:
                 nodePort: 30080
               httpsPort:
